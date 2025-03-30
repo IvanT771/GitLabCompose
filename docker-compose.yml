@@ -9,7 +9,7 @@ services:
         # Add any other gitlab.rb configuration here, each on its own line
         external_url 'http://domain.com'
         gitlab_rails['registry_enabled'] = true
-        registry_external_url 'http://gitlab.gentlemen.games.ru:5001'
+        registry_external_url 'http://domain.com:5001'
     ports:
       - '0.0.0.0:80:80'
       - '0.0.0.0:443:443'
