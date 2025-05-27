@@ -1,0 +1,61 @@
+services:
+  wg-easy:
+    environment:
+      # ⚠️ Change the server's hostname (clients will connect to):
+      - WG_HOST=95.165.31.22
+      # ⚠️ Change the Web UI Password:
+      # - PASSWORD=foobar123
+      # 💡 This is the Pi-Hole Container's IP Address
+      - WG_DEFAULT_DNS=8.8.8.8,1.1.1.1
+      - WG_DEFAULT_ADDRESS=10.8.0.x
+      - WG_ALLOWED_IPS=10.8.0.0/24,10.8.1.0/24
+#      - WG_POST_UP=iptables -t nat -A PREROUTING -p tcp --dport 80 -j DNAT --to-destination 10.8.1.11:80; iptables -A FORWARD -p tcp --dport 80 -j ACCEPT; iptables -t nat -A PREROUTEDING -p tcp --dport 443 -j DNAT --to-destination 10.8.1.11:443
+#      - WG_POST_DOWN=iptables -t nat -D PREROUTING -p tcp --dport 80 -j DNAT --to-destination 10.8.1.11:80; iptables -D FORWARD -p tcp --dport 80 -j ACCEPT; iptables -t nat -D PREROUTING -p tcp --dport 443 -j DNAT --to-destination 10.8.1.11:443
+#---ниже блокировка локальной сети, выше тест проброса порта 443
+#      - WG_POST_UP=iptables -I FORWARD -i wg0 -d 192.168.1.0/24 -j REJECT; iptables -I FORWARD -i wg0 -s 10.8.0.2 -d 192.168.1.0/24 -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE; iptables -A FORWARD -i wg0 -j DROP; iptables -I FORWARD -i wg0 -d 10.8.1.0/24 -j ACCEPT
+#      - WG_POST_DOWN=iptables -D FORWARD -i wg0 -d 192.168.1.0/24 -j REJECT; iptables -D FORWARD -i wg0 -s 10.8.0.2 -d 192.168.1.0/24 -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE; iptables -D FORWARD -i wg0 -j DROP; iptables -D FORWARD -i wg0 -d 10.8.1.0/24 -j ACCEPT
+    image: ghcr.io/wg-easy/wg-easy:latest
+    container_name: wg-easy
+    volumes:
+      - ./wg-easy:/etc/wireguard
+    ports:
+      - "51820:51820/udp"
+#      - "51821:51821/tcp"
+#      - "8080:8080/tcp"  # Добавляем проброс порта AIO
+#      - "443:443/tcp"    # Порт для HTTPS
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    sysctls:
+      - net.ipv4.ip_forward=1
+      - net.ipv4.conf.all.src_valid_mark=1
+    networks:
+      wg-easy:
+        ipv4_address: 10.8.1.2
+
+
+  twportainer:
+    image: portainer/portainer-ce:latest
+    container_name: twportainer
+    environment:
+      - TZ=Europe/Moscow
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /opt/twportainer/portainer_data:/data
+    ports:
+      - "8000:8000"
+      - "9443:9443"
+    restart: always
+    networks:
+      wg-easy:
+        ipv4_address: 10.8.1.20
+
+
+networks:
+  wg-easy:
+    external: true
+    name: wireguard
+    ipam:
+      config:
+        - subnet: 10.8.1.0/24
