@@ -1,0 +1,26 @@
+services:
+ nextcloud:
+    image: nextcloud/all-in-one:latest
+    restart: unless-stopped
+    container_name: nextcloud-aio-mastercontainer
+    volumes:
+      - nextcloud_aio_mastercontainer:/mnt/docker-aio-config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - 8080:8080
+      - 82:80
+      - 8443:8443
+    environment:
+      - APACHE_PORT=11000
+#      - APACHE_IP_BINDING=127.0.0.1
+    networks:
+      wg-easy:
+        ipv4_address: 10.8.1.15
+volumes:
+  nextcloud_aio_mastercontainer:
+    name: nextcloud_aio_mastercontainer
+
+networks:
+  wg-easy:
+    external: true
+    name: wireguard
